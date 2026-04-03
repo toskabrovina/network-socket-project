@@ -1,2 +1,2 @@
-# network-socket-project
-Projekt në Python që implementon server dhe klientë për komunikim në rrjet duke përdorur socket dhe HTTP.
+# UDP-socket-client-and-server-implementation-Node.js---Rrjeta-Kompjuterike
+Projekti ne Rrjeta Kompjuterike
