@@ -1,37 +1,32 @@
 const net = require("net");
 const fileCommands = require("./fileCommands");
 
-const PORT = 3000;
-let clients = [];
-
 const server = net.createServer((socket) => {
     console.log("Client connected");
 
-    clients.push(socket);
-
-    // ✅ KREJT LOGJIKA DUHET BRENDA KËTIJ BLOKU
     socket.on("data", (data) => {
-        const msg = data.toString().trim();
+        const command = data.toString().trim();
+        console.log("COMMAND:", command);
 
-        console.log("Received:", msg);
-
-        if (msg === "/list") {
+        if (command === "list") {
+            console.log("Executing LIST...");
             fileCommands.list(socket);
         } else {
-            socket.write("Server got: " + msg + "\n");
+            socket.write("Unknown command\n");
         }
     });
 
+    socket.on("error", (err) => {
+        console.log("Socket error:", err.message);
+    });
+
     socket.on("end", () => {
-        clients = clients.filter(c => c !== socket);
         console.log("Client disconnected");
     });
-
-    socket.on("error", (err) => {
-        console.log("Error:", err.message);
-    });
 });
 
-server.listen(PORT, () => {
-    console.log("Server running on port " + PORT);
+server.listen(3000, () => {
+    console.log("Server running on port 3000");
 });
+
+//test kk

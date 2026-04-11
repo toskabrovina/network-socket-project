@@ -1,7 +1,6 @@
 const dgram = require("dgram");
 const client = dgram.createSocket('udp4');
 const readline = require('readline');
-const fs = require('fs');
 
 const PORT = 3000; 
 const HOST = '127.0.0.1'; 
@@ -27,8 +26,13 @@ client.send(initialAuth, PORT, HOST, (err) => {
     }
 });
 
+
 rl.on('line', (input) => {
     client.send(input, PORT, HOST);
     rl.prompt();
 });
 
+
+client.on('message', (msg) => {
+    console.log("SERVER:", msg.toString());
+});
