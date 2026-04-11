@@ -17,22 +17,13 @@ const initialAuth = JSON.stringify({
     role: "ADMIN" 
 });
 
-client.send(initialAuth, PORT, HOST, (err) => {
-    if (err) {
-        console.log("Gabim: Serveri nuk u gjet!");
-    } else {
-        console.log(`Lidhur me sukses në ${HOST}:${PORT} si ADMIN.`);
-        rl.prompt();
-    }
-});
-
-
-rl.on('line', (input) => {
-    client.send(input, PORT, HOST);
-    rl.prompt();
-});
-
+client.send(initialAuth, PORT, HOST);
 
 client.on('message', (msg) => {
     console.log("SERVER:", msg.toString());
+    rl.prompt();
+});
+
+rl.on('line', (input) => {
+    client.send(input, PORT, HOST);
 });
