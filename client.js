@@ -1,24 +1,38 @@
-const net = require("net");
-const readline = require("readline");
+const dgram = require("dgram");
+const client = dgram.createSocket('udp4');
+const readline = require('readline');
 
-const client = net.createConnection({ port: 3000 }, () => {
-    console.log("Connected to server");
-});
-
-client.on("error", (err) => {
-    console.log("CLIENT ERROR:", err.message);
-});
+const PORT = 3000; 
+const HOST = '127.0.0.1'; 
 
 const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
+    prompt: 'CLIENT-ADMIN> '
 });
 
-rl.on("line", (input) => {
-    console.log("Sending:", input);
-    client.write(input);
+const initialAuth = JSON.stringify({
+    type: "AUTH",
+    user: "Client_01",
+    role: "ADMIN" 
 });
 
-client.on("data", (data) => {
-    console.log("SERVER:", data.toString());
+client.send(initialAuth, PORT, HOST, (err) => {
+    if (err) {
+        console.log("Gabim: Serveri nuk u gjet!");
+    } else {
+        console.log(`Lidhur me sukses në ${HOST}:${PORT} si ADMIN.`);
+        rl.prompt();
+    }
+});
+
+
+rl.on('line', (input) => {
+    client.send(input, PORT, HOST);
+    rl.prompt();
+});
+
+
+client.on('message', (msg) => {
+    console.log("SERVER:", msg.toString());
 });
