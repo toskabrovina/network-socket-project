@@ -1,21 +1,24 @@
 const net = require("net");
 const readline = require("readline");
 
-const client = net.createConnection({ port: 3000 });
+const client = net.createConnection({ port: 3000 }, () => {
+    console.log("Connected to server");
+});
+
+client.on("error", (err) => {
+    console.log("CLIENT ERROR:", err.message);
+});
 
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
-client.on("connect", () => {
-    console.log("Connected to server");
+rl.on("line", (input) => {
+    console.log("Sending:", input);
+    client.write(input);
 });
 
 client.on("data", (data) => {
-    console.log("Server:", data.toString());
-});
-
-rl.on("line", (input) => {
-    client.write(input);
+    console.log("SERVER:", data.toString());
 });
