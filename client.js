@@ -41,6 +41,13 @@ rl.on('line', (input) => {
         client.send(readCmd, PORT, HOST);
     }
 
+    else if (message === '/exit') {
+        console.log("Duke u mbyllur...");
+        client.close();
+        rl.close();
+        process.exit();
+    }
+    
     else{
         client.send(message, PORT, HOST);
     }
