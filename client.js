@@ -25,5 +25,25 @@ client.on('message', (msg) => {
 });
 
 rl.on('line', (input) => {
-    client.send(input, PORT, HOST);
+    const message = input.trim();
+
+    if (message === '/list'){
+        const listCmd = JSON.stringify({ type: "LIST" });
+        client.send(listCmd, PORT, HOST);
+    }
+
+    else if (message.startsWith('/read ')){
+        const fileName = message.split(' ')[1];
+        const readCmd = JSON.stringify({
+            type: "READ",
+            fileName: fileName
+        });
+        client.send(readCmd, PORT, HOST);
+    }
+
+    else{
+        client.send(message, PORT, HOST);
+    }
+
+    rl.prompt();
 });
