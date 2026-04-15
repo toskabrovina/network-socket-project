@@ -36,3 +36,12 @@ function getFileForDownload(filename) {
   const base64 = buffer.toString("base64");
   return { filename, base64 };
 }
+
+function deleteFile(filename) {
+  const filePath = path.join(SHARED_FOLDER, filename);
+  if (!fs.existsSync(filePath)) {
+    return `ERROR: File ${filename} nuk ekziston`;
+  }
+  fs.unlinkSync(filePath);
+  return `OK: File ${filename} u fshi`;
+}
