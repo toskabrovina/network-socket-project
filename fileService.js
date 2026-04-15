@@ -60,3 +60,22 @@ function fileInfo(filename) {
   if (!fs.existsSync(filePath)) {
     return `ERROR: File ${filename} nuk ekziston`;
   }
+
+   const stats = fs.statSync(filePath);
+  return (
+    `Emri: ${filename}\n` +
+    `Madhësia: ${stats.size} bytes\n` +
+    `Krijuar: ${stats.birthtime}\n` +
+    `Modifikuar: ${stats.mtime}`
+  );
+}
+
+module.exports = {
+  listFiles,
+  readFileContent,
+  saveUploadedFile,
+  getFileForDownload,
+  deleteFile,
+  searchFiles,
+  fileInfo,
+};
