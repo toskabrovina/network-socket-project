@@ -45,3 +45,18 @@ function deleteFile(filename) {
   fs.unlinkSync(filePath);
   return `OK: File ${filename} u fshi`;
 }
+
+function searchFiles(keyword) {
+  const files = fs.readdirSync(SHARED_FOLDER);
+  const matched = files.filter((f) => f.includes(keyword));
+  if (matched.length === 0) {
+    return `S'u gjet asnjë file me fjalë kyçe "${keyword}"`;
+  }
+  return matched.join("\n");
+}
+
+function fileInfo(filename) {
+  const filePath = path.join(SHARED_FOLDER, filename);
+  if (!fs.existsSync(filePath)) {
+    return `ERROR: File ${filename} nuk ekziston`;
+  }
