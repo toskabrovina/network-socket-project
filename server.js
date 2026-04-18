@@ -1,60 +1,209 @@
 const dgram = require("dgram");
-const fs = require("fs");
+const {
+  listFiles,
+  readFileContent,
+  saveUploadedFile,
+  getFileForDownload,
+  deleteFile,
+  searchFiles,
+  fileInfo,
+} = require("./fileService");
 
 const server = dgram.createSocket("udp4");
 
-let loggedUsers = {};
+  switch (cmd) {
+    case "LIST":
+      return listFiles();
 
+    case "READ": {
+      const filename = args[0];
+      if (!filename) return "ERROR: READ <filename>";
+      return readFileContent(filename);
+    }
+
+    case "UPLOAD": {
+      const filename = args[0];
+      const base64Data = args.slice(1).join(" ");
+      if (!filename || !base64Data) {
+        return "ERROR: UPLOAD <filename> <base64Data>";
+      }
+      return saveUploadedFile(filename, base64Data);
+    }
+
+    case "DOWNLOAD": {
+      const filename = args[0];
+      if (!filename) return "ERROR: DOWNLOAD <filename>";
+      const res = getFileForDownload(filename);
+      if (res.error) return res.error;
+      return `FILEDATA ${res.filename} ${res.base64}`;
+    }
+
+    case "DELETE": {
+      const filename = args[0];
+      if (!filename) return "ERROR: DELETE <filename>";
+      return deleteFile(filename);
+    }
+
+    case "SEARCH": {
+      const keyword = args[0];
+      if (!keyword) return "ERROR: SEARCH <keyword>";
+      return searchFiles(keyword);
+    }
+
+    case "INFO": {
+      const filename = args[0];
+      if (!filename) return "ERROR: INFO <filename>";
+      return fileInfo(filename);
+    }
+
+    case "MSG": {
+      return `Mesazh u pranua nga ${client.id}: ${args.join(" ")}`;
+    }
+
+    default:
+      return `ERROR: Komanda e panjohur: ${cmd}`;
+  }
+
+function sendResponse(client, rinfo, text) {
+  const buffer = Buffer.from(text, "utf8");
+  const delay = isAdmin(client.role) ? 0 : 500;
+
+  setTimeout(() => {
+    server.send(buffer, rinfo.port, rinfo.address, (err) => {
+      if (err) console.error("Error në dërgim:", err);
+    });
+    client.bytesOut += buffer.length;
+    totalBytesOut += buffer.length;
+  }, delay);
+}
 server.on("message", (msg, rinfo) => {
-    const text = msg.toString().trim();
-    console.log(`Marrë nga ${rinfo.address}: ${text}`);
+  const key = getClientKey(rinfo);
+  const text = msg.toString("utf8").trim();
+  totalBytesIn += msg.length;
+  totalMessages++;
 
-  
-    let data;
-    try {
-        data = JSON.parse(text);
-    } catch (e) {
-        data = { type: "TEXT", value: text };
-    }
+  const parts = text.split("|");
+  if (parts.length < 3) {
+    const errMsg = "ERROR: Mesazh i pavlefshëm. Formati: clientId|role|komanda";
+    const buf = Buffer.from(errMsg, "utf8");
+    server.send(buf, rinfo.port, rinfo.address);
+    return;
+  }
 
-    if (data.type === "AUTH") {
-        loggedUsers[rinfo.address] = { role: data.role, user: data.user };
-        server.send(`SUKSES: Miresevini ${data.user} (${data.role})`, rinfo.port, rinfo.address);
-        return;
-    }
+  const clientId = parts[0];
+  const role = parts[1];
+  const commandLine = parts.slice(2).join("|");
 
-    if (!loggedUsers[rinfo.address]) {
-        server.send("GABIM: Identifikohu me AUTH ne fillim!", rinfo.port, rinfo.address);
-        return;
-    }
+  if (!registerClient(key, clientId, role, rinfo)) {
+    const buf = Buffer.from("ERROR: Serveri është i mbushur (MAX_CLIENTS)", "utf8");
+    server.send(buf, rinfo.port, rinfo.address);
+    return;
+  }
 
+  const client = clients.get(key);
+  client.lastSeen = Date.now();
+  client.messages++;
+  client.bytesIn += msg.length;
 
-    if (data.type === "LIST") {
-        fs.readdir(".", (err, files) => {
-            if (err) {
-                server.send("GABIM gjate leximit!", rinfo.port, rinfo.address);
-                return;
-            }
-const result = "LISTA E FAJLLAVE:\n" + files.join("\n");
-            server.send(result, rinfo.port, rinfo.address);
-        });
-    } 
-    else if (data.type === "READ") {
-        fs.readFile(`./${data.fileName}`, "utf8", (err, content) => {
-            if (err) {
-                server.send(`GABIM: Fajlli '${data.fileName}' nuk u gjet!`, rinfo.port, rinfo.address);
-                return;
-            }
-            server.send(`PERMBAJTJA E ${data.fileName}:\n${content}`, rinfo.port, rinfo.address);
-        });
-    } 
-    else {
-        server.send("Unknown command", rinfo.port, rinfo.address);
-    }
-}); 
-           
-server.bind(3000, () => {
-    console.log("UDP Server running on port 3000");
+  const response = handleCommand(client, commandLine);
+  sendResponse(client, rinfo, response);
 });
 
-//test per github
+server.on("listening", () => {
+  const address = server.address();
+  console.log(`✅ UDP server duke dëgjuar në port ${address.port}`);
+  console.log(`Përdor komandën "STATS" në këtë terminal për statistika.\n`);
+});
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, client] of clients.entries()) {
+    if (now - client.lastSeen > CLIENT_TIMEOUT_MS) {
+      console.log(
+        `⚠️ Lidhja me klientin ${client.id} (${client.address}:${client.port}) u mbyll për shkak të mosaktivitetit.`
+      );
+      clients.delete(key);
+    }
+  }
+}, 5_000);
+
+// Ruajtja periodike e statistikave çdo 60 sekonda
+setInterval(() => {
+  printStats();
+}, 60_000);
+
+server.bind(SERVER_PORT);
+
+function printStats() {
+  const lines = [];
+  lines.push("===== SERVER STATS =====");
+  lines.push(`Koha: ${new Date().toISOString()}`);
+  lines.push(`Lidhje aktive: ${clients.size}`);
+  lines.push(`Total mesazhe: ${totalMessages}`);
+  lines.push(`Bytes pranuar: ${totalBytesIn}`);
+  lines.push(`Bytes dërguar: ${totalBytesOut}`);
+  lines.push("Klientët aktivë:");
+
+  for (const client of clients.values()) {
+    lines.push(
+      `- id=${client.id}, role=${client.role}, ip=${client.address}, msg=${client.messages}, in=${client.bytesIn}, out=${client.bytesOut}`
+    );
+  }
+
+  const output = lines.join("\n") + "\n\n";
+  console.log(output);
+  fs.appendFileSync(STATS_LOG_FILE, output);
+}
+
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (data) => {
+  const cmd = data.trim().toUpperCase();
+  if (cmd === "STATS") {
+    printStats();
+  }
+});
+
+// ===== HTTP SERVER (monitorim) =====
+const httpServer = http.createServer((req, res) => {
+  if (req.method === "GET" && req.url === "/stats") {
+    const activeClients = [];
+    for (const client of clients.values()) {
+      activeClients.push({
+        id: client.id,
+        role: client.role,
+        ip: client.address,
+        port: client.port,
+        messages: client.messages,
+        bytesIn: client.bytesIn,
+        bytesOut: client.bytesOut,
+        lastSeen: new Date(client.lastSeen).toISOString(),
+      });
+    }
+
+    const stats = {
+      timestamp: new Date().toISOString(),
+      activeConnections: clients.size,
+      maxClients: MAX_CLIENTS,
+      totalMessages,
+      totalBytesIn,
+      totalBytesOut,
+      clients: activeClients,
+      recentMessages: messageLog.slice(-20),
+    };
+
+    const body = JSON.stringify(stats, null, 2);
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Content-Length": Buffer.byteLength(body),
+    });
+    res.end(body);
+  } else {
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("UDP File Server - Endpoints: GET /stats");
+  }
+});
+
+httpServer.listen(HTTP_PORT, () => {
+  console.log(`🌐 HTTP monitoring server duke dëgjuar në port ${HTTP_PORT}`);
+  console.log(`   Statistikat: http://localhost:${HTTP_PORT}/stats\n`);
+});
