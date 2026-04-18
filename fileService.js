@@ -36,3 +36,46 @@ function getFileForDownload(filename) {
   const base64 = buffer.toString("base64");
   return { filename, base64 };
 }
+
+function deleteFile(filename) {
+  const filePath = path.join(SHARED_FOLDER, filename);
+  if (!fs.existsSync(filePath)) {
+    return `ERROR: File ${filename} nuk ekziston`;
+  }
+  fs.unlinkSync(filePath);
+  return `OK: File ${filename} u fshi`;
+}
+
+function searchFiles(keyword) {
+  const files = fs.readdirSync(SHARED_FOLDER);
+  const matched = files.filter((f) => f.includes(keyword));
+  if (matched.length === 0) {
+    return `S'u gjet asnjë file me fjalë kyçe "${keyword}"`;
+  }
+  return matched.join("\n");
+}
+
+function fileInfo(filename) {
+  const filePath = path.join(SHARED_FOLDER, filename);
+  if (!fs.existsSync(filePath)) {
+    return `ERROR: File ${filename} nuk ekziston`;
+  }
+
+   const stats = fs.statSync(filePath);
+  return (
+    `Emri: ${filename}\n` +
+    `Madhësia: ${stats.size} bytes\n` +
+    `Krijuar: ${stats.birthtime}\n` +
+    `Modifikuar: ${stats.mtime}`
+  );
+}
+
+module.exports = {
+  listFiles,
+  readFileContent,
+  saveUploadedFile,
+  getFileForDownload,
+  deleteFile,
+  searchFiles,
+  fileInfo,
+};
