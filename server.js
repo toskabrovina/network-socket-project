@@ -1,4 +1,13 @@
 const dgram = require("dgram");
+const http = require("http");
+const fs = require("fs");
+const {
+  SERVER_PORT,
+  HTTP_PORT,
+  MAX_CLIENTS,
+  CLIENT_TIMEOUT_MS,
+  STATS_LOG_FILE,
+} = require("./config");
 const {
   listFiles,
   readFileContent,
@@ -10,6 +19,66 @@ const {
 } = require("./fileService");
 
 const server = dgram.createSocket("udp4");
+
+const clients = new Map();
+
+let totalBytesIn = 0;
+let totalBytesOut = 0;
+let totalMessages = 0;
+const messageLog = [];
+
+function getClientKey(rinfo) {
+  return `${rinfo.address}:${rinfo.port}`;
+}
+
+function registerClient(key, clientId, role, rinfo) {
+  if (!clients.has(key)) {
+    if (clients.size >= MAX_CLIENTS) {
+      return false;
+    }
+    clients.set(key, {
+      id: clientId,
+      role,
+      address: rinfo.address,
+      port: rinfo.port,
+      lastSeen: Date.now(),
+      messages: 0,
+      bytesIn: 0,
+      bytesOut: 0,
+    });
+    console.log(
+      `→ Klient i ri: id=${clientId}, role=${role}, ip=${rinfo.address}, port=${rinfo.port}`
+    );
+  }
+  return true;
+}
+
+function isAdmin(role) {
+  return role.toLowerCase() === "admin";
+}
+
+function hasPermission(role, command) {
+  const cmd = command.toUpperCase();
+  const readOnlyAllowed = ["LIST", "READ", "DOWNLOAD", "SEARCH", "INFO", "MSG"];
+  if (isAdmin(role)) return true;
+  return readOnlyAllowed.includes(cmd);
+}
+
+function handleCommand(client, commandLine) {
+  const parts = commandLine.trim().split(" ");
+  const cmd = parts[0].toUpperCase();
+  const args = parts.slice(1);
+
+  messageLog.push({
+    time: new Date().toISOString(),
+    clientId: client.id,
+    ip: client.address,
+    cmd: commandLine,
+  });
+
+  if (!hasPermission(client.role, cmd)) {
+    return "ERROR: Permission denied (vetëm admin ka qasje të plotë)";
+  }
 
   switch (cmd) {
     case "LIST":
@@ -63,7 +132,7 @@ const server = dgram.createSocket("udp4");
     default:
       return `ERROR: Komanda e panjohur: ${cmd}`;
   }
-
+}
 function sendResponse(client, rinfo, text) {
   const buffer = Buffer.from(text, "utf8");
   const delay = isAdmin(client.role) ? 0 : 500;
