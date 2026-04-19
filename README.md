@@ -38,7 +38,78 @@ network-socket-project/
 │── config.js
 │── shared/
 │── README.md
+```
 
+## Përshkrimi i fajllave
 
+- **client.js** – përmban logjikën e klientit, marrjen e komandave nga terminali dhe komunikimin me serverin.
+- **server.js** – përmban logjikën kryesore të serverit UDP dhe përpunimin e kërkesave nga klientët.
+- **fileService.js** – përmban funksionet për menaxhimin e fajllave si listimi, leximi, ruajtja, fshirja dhe kërkimi.
+- **config.js** – përmban konfigurimet bazë si IP adresa, porti dhe folderi i përbashkët.
 
+## Rolet e përdoruesve
 
+- **admin** – ka qasje në të gjitha komandat.
+- **read** – ka qasje vetëm në komandat bazë.
+
+## Komandat e projektit
+
+| Komanda | Përshkrimi |
+|--------|------------|
+| `/list` | Shfaq fajllat në server |
+| `/read <filename>` | Lexon një fajll |
+| `/upload <local_filename>` | Ngarkon një fajll në server |
+| `/download <filename>` | Shkarkon një fajll nga serveri |
+| `/delete <filename>` | Fshin një fajll nga serveri |
+| `/search <keyword>` | Kërkon fajlla sipas emrit |
+| `/info <filename>` | Shfaq informata për fajllin |
+
+## Si ekzekutohet projekti
+
+Së pari duhet të keni të instaluar **Node.js**.
+
+**Nisja e serverit**
+
+```bash
+node server.js
+```
+
+**Nisja e klientit**
+
+```bash
+node client.js Client_01 admin
+```
+
+ose
+
+```bash
+node client.js Client_02 read
+```
+
+## Shembuj përdorimi
+
+```bash
+/list
+/read test.txt
+/search test
+/info test.txt
+/download test.txt
+```
+
+Për `admin`:
+
+```bash
+/upload dokument.txt
+/delete dokument.txt
+```
+
+## Përmbledhje
+
+Ky projekt tregon përdorimin e komunikimit client-server me UDP në Node.js, së bashku me operime bazë me fajlla dhe kontroll të qasjes sipas roleve të përdoruesve.
+
+## Anëtarët e grupit
+
+- Toska Brovina
+- Sumeja Ibrahimi
+- Ubejd Shahini
+- Valon Hajredini
