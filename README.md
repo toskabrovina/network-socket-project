@@ -2,7 +2,7 @@
 #Projekti ne Rrjeta Kompjuterike
 
 Ky projekt është realizuar në **Node.js** dhe demonstron komunikimin **client-server** përmes **UDP socket**.  
-Qëllimi i projektit është që klienti të mund të lidhet me serverin, të dërgojë komanda dhe të kryejë operime të ndryshme me fajlla, si listimi, leximi, ngarkimi, shkarkimi, fshirja, kërkimi dhe shfaqja e informatave për fajllat. Klienti i përdor komandat nga terminali dhe serveri i përpunon ato sipas rolit të përdoruesit. Struktura dhe komandat e klientit përputhen me implementimin në `client.js`. :contentReference[oaicite:0]{index=0}
+Qëllimi i projektit është që klienti të mund të lidhet me serverin, të dërgojë komanda dhe të kryejë operime të ndryshme me fajlla, si listimi, leximi, ngarkimi, shkarkimi, fshirja, kërkimi dhe shfaqja e informatave për fajllat. Klienti i përdor komandat nga terminali dhe serveri i përpunon ato sipas rolit të përdoruesit. Struktura dhe komandat e klientit përputhen me implementimin në `client.js`. 
 
 ## Funksionalitetet kryesore
 
